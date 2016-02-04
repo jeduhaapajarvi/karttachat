@@ -45,3 +45,35 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+local.properties
+build/intermediates/dex-cache/cache.xml
+.idea/workspace.xml
+build/intermediates/dex-cache/cache.xml
+.idea/misc.xml
+.idea/libraries/support_v4_23_1_1.xml
+.idea/libraries/play_services_wallet_8_3_0.xml
+.idea/libraries/play_services_vision_8_3_0.xml
+.idea/libraries/appcompat_v7_23_1_1.xml
+.idea/libraries/appcompat_v7_23_1_1.xml
+.idea/libraries/mediarouter_v7_22_2_0.xml
+.idea/libraries/play_services_analytics_8_3_0.xml
+.idea/libraries/play_services_appindexing_8_3_0.xml
+.idea/libraries/play_services_appinvite_8_3_0.xml
+.idea/libraries/play_services_appstate_8_3_0.xml
+.idea/libraries/play_services_identity_8_3_0.xml
+app/app.iml
+.gradle/2.8/taskArtifacts/cache.properties
+.gradle/2.8/taskArtifacts/cache.properties.lock
+.gradle/2.8/taskArtifacts/fileHashes.bin
+.gradle/2.8/taskArtifacts/fileSnapshots.bin
+.gradle/2.8/taskArtifacts/outputFileStates.bin
+.gradle/2.8/taskArtifacts/taskArtifacts.bin
+.idea/compiler.xml
+.idea/compiler.xml
+.idea/libraries/mediarouter_v7_22_2_0.xml
+.idea/libraries/play_services_maps_8_3_0.xml
+.idea/libraries/play_services_panorama_8_3_0.xml
+.idea/libraries/play_services_vision_8_3_0.xml
+.idea/libraries/play_services_wearable_8_3_0.xml
+.idea/runConfigurations.xml
+.idea/modules.xml
