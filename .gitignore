@@ -77,3 +77,13 @@ app/app.iml
 .idea/libraries/play_services_wearable_8_3_0.xml
 .idea/runConfigurations.xml
 .idea/modules.xml
+local.properties
+.gradle/2.4/taskArtifacts/cache.properties.lock
+.idea/gradle.xml
+.idea/libraries/appcompat_v7_23_1_1.xml
+.idea/libraries/mediarouter_v7_22_2_0.xml
+.idea/libraries/support_v4_23_1_1.xml
+.idea/workspace.xml
+app/app.iml
+local.properties
+.idea/workspace.xml
