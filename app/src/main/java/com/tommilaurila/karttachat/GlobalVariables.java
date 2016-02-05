@@ -44,20 +44,20 @@ public class GlobalVariables {
 
         for(int i = 0; i < userList.size(); i++){
             if(userName.equals(userList.get(i).getUserName())){
-                userId = userList.get(i).getId();
+                userId = userList.get(i).getUser_id();
             }
         }
 
         return userId;
     }
 
-    public int addNewUser(String userName){
+    public int addNewUser(String userName, String password){
 
         //New DatabaseHandler
         DatabaseHandler db = new DatabaseHandler(context);
 
         //Place the value DatabaseHandler to-be returned newUserId
-        int newUserId = db.addUser(new User(userName));
+        int newUserId = db.addUser(new User(userName, password));
 
         return newUserId;
     }

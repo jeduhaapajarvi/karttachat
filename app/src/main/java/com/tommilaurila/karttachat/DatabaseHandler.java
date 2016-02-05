@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
+import com.google.android.gms.maps.model.Marker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,24 +61,22 @@ public class DatabaseHandler extends SQLiteOpenHelper{
                 + KEY_ID + " INTEGER PRIMARY KEY NOT NULL, "
                 + KEY_USERNAME + " TEXT, "
                 + KEY_USERPASSWORD + " TEXT, "
-                + KEY_USERLEVEL + " TEXT, "
+                + KEY_USERLEVEL + " INTEGER, "
                 + KEY_USERCREATIONTIME + " TEXT, "
                 + KEY_USERLASTSEEN + " TEXT, "
                 + KEY_USERGROUPID + " TEXT, "
-                + KEY_USERSTATUS + " TEXT, "
-                + KEY_USERLOCATION + " TEXT, "
-                + KEY_USERMARKER + " TEXT, "
-                + KEY_USERSERVERTIME + " TEXT, "+")";
+                + KEY_USERSERVERTIME + " TEXT, "
+                + ")";
         //Build locations table statement
         String CREATE_LOCATIONS_TABLE = "CREATE TABLE " + TABLE_LOCATIONS + "("
-                + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                + KEY_ID + " INTEGER PRIMARY KEY NOT NULL, "
                 + KEY_LOCATIONLAT + " TEXT, "
                 + KEY_LOCATIONLNG + " TEXT, "
                 + KEY_LOCATIONTIMESTAMP + " TEXT, "
                 + KEY_LOCATIONUSERID + " TEXT, "
                 + ")";
         String CREATE_GROUPS_TABLE = "CREATE TABLE " + TABLE_GROUPS + "("
-                + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                + KEY_ID + " INTEGER PRIMARY KEY NOT NULL, "
                 + KEY_GROUPCREATOR + " TEXT, "
                 + KEY_GROUPNAME + " TEXT, "
                 + KEY_GROUPPASSWORD + " TEXT "
@@ -115,8 +114,15 @@ public class DatabaseHandler extends SQLiteOpenHelper{
         String query = "SELECT ROWID from " + TABLE_USERS + " order by ROWID DESC limit 1";
         int newUserId = -1;
 
+        //put all of the user information into the values string
         ContentValues values = new ContentValues();
-        values.put(KEY_USER, user.getUserName()); // Username
+        values.put(KEY_USERNAME, user.getUserName()); // Username
+        values.put(KEY_USERPASSWORD ,user.getPassword());// Users password
+        values.put(KEY_USERLEVEL ,user.getLevel());// Users level (admin, normal, etc.)
+        values.put(KEY_USERCREATIONTIME ,user.getCreationTime());// Time the user was created
+        values.put(KEY_USERLASTSEEN ,user.getLastSeen());// Time the user has been updated
+        values.put(KEY_USERGROUPID ,user.getGroup_id());// Users current groupId
+        values.put(KEY_USERSERVERTIME ,user.getServerTime());// Users last server time?
 
         Log.d("oma", "DBHandler adding user: " + values.toString());
 
@@ -138,25 +144,39 @@ public class DatabaseHandler extends SQLiteOpenHelper{
     // Getting single user
     public User getUser(int id){
 
+        User returnUser = new User();
+
         //Initializing database connection
         SQLiteDatabase db = this.getWritableDatabase();
 
         /*Log.d("oma", "UserId databasehandlerissa: " + id);*/
 
         Cursor cursor = db.query(TABLE_USERS, new String[]{KEY_ID,
-                        KEY_USER}, KEY_ID + " = ?",
+                        KEY_USERNAME,
+                        KEY_USERPASSWORD,
+                        KEY_USERLEVEL,
+                        KEY_USERCREATIONTIME,
+                        KEY_USERLASTSEEN,
+                        KEY_USERGROUPID,
+                        KEY_USERSERVERTIME
+                }, KEY_ID + " = ?",
                 new String[]{String.valueOf(id)}, null, null, null, null);
         if (cursor != null) {
             cursor.moveToFirst();
+
+            returnUser.setUser_id(cursor.getInt(0));
+            returnUser.setUserName(cursor.getString(1));
+            returnUser.setPassword(cursor.getString(2));
+            returnUser.setLevel(cursor.getInt(3));
+            returnUser.setCreationTime(cursor.getString(4));
+            returnUser.setGroup_id(cursor.getInt(5));
+            returnUser.setServerTime(cursor.getString(6));
+
+            cursor.close();
         }
 
-        User user = new User(Integer.parseInt(cursor.getString(0)),
-                cursor.getString(1));
-
-        cursor.close();
-
         // return user
-        return user;
+        return returnUser;
 
     }
 
@@ -175,8 +195,14 @@ public class DatabaseHandler extends SQLiteOpenHelper{
         if (cursor.moveToFirst()) {
             do {
                 User user = new User();
-                user.setId(Integer.parseInt(cursor.getString(0)));
+
+                user.setUser_id(cursor.getInt(0));
                 user.setUserName(cursor.getString(1));
+                user.setPassword(cursor.getString(2));
+                user.setLevel(cursor.getInt(3));
+                user.setCreationTime(cursor.getString(4));
+                user.setGroup_id(cursor.getInt(5));
+                user.setServerTime(cursor.getString(6));
                 // Adding user to list
                 userList.add(user);
             } while (cursor.moveToNext());
