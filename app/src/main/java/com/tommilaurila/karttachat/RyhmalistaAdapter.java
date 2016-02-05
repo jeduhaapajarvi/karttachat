@@ -12,14 +12,14 @@ import java.util.List;
 /**
  * Created by tommi.laurila on 19.5.2015.
  */
-public class RyhmalistaAdapter extends ArrayAdapter<Ryhma> {
+public class RyhmalistaAdapter extends ArrayAdapter<Group> {
 
 
     public RyhmalistaAdapter(Context context, int textViewResourceId) {
         super(context, textViewResourceId);
     }
 
-    public RyhmalistaAdapter(Context context, int resource, List<Ryhma> items) {
+    public RyhmalistaAdapter(Context context, int resource, List<Group> items) {
         super(context, resource, items);
     }
 
@@ -34,7 +34,7 @@ public class RyhmalistaAdapter extends ArrayAdapter<Ryhma> {
             v = vi.inflate(R.layout.listarivi_ryhmat, null);
         }
 
-        Ryhma p = getItem(position);
+        Group p = getItem(position);
 
         if (p != null) {
             TextView tt0 = (TextView) v.findViewById(R.id.tvRyhmaId);
@@ -42,15 +42,15 @@ public class RyhmalistaAdapter extends ArrayAdapter<Ryhma> {
             TextView tt2 = (TextView) v.findViewById(R.id.tvPerustamisaika);
 
             if (tt0 != null) {
-                tt0.setText(p.getRyhma_id() + "");
+                tt0.setText(p.getGroup_id() + "");
             }
 
             if (tt1 != null) {
-                tt1.setText(p.getNimi());
+                tt1.setText(p.getGroupName());
             }
 
             if (tt2 != null) {
-                tt2.setText("Perustettu " + p.getPerustamisaika());
+                tt2.setText("Perustettu " + p.getCreationTime());
             }
         }
 

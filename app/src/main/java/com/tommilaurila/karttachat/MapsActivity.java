@@ -6,7 +6,6 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.location.Location;
 //import android.location.LocationListener;
 import android.os.AsyncTask;
 import android.support.v4.app.DialogFragment;
@@ -51,7 +50,7 @@ public class MapsActivity extends android.support.v7.app.AppCompatActivity
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
     private GoogleApiClient mGoogleApiClient;
-    private Location mLastLocation;
+    private android.location.Location mLastLocation;
     private LocationRequest mLocationRequest;
     private Marker omaSijainti;
     private Timer lahetysAjastin = new Timer();
@@ -61,7 +60,7 @@ public class MapsActivity extends android.support.v7.app.AppCompatActivity
     private String ryhmaId;
     private String ryhmaLuoja;
     private String chatViesti = "testi";
-    private ArrayList<Kayttaja> kayttajat = new ArrayList<>();
+    private ArrayList<User> kayttajat = new ArrayList<>();
     private boolean seurantaPaalla = false;
     private int paivitysVali = 60;
 
@@ -170,15 +169,15 @@ public class MapsActivity extends android.support.v7.app.AppCompatActivity
             kirjoitaKayttajaTiedot(kayttajaId, kayttajaNimi, ryhmaId, ryhmaNimi, ryhmaLuoja);
         }
 
-        Kayttaja mina = new Kayttaja();
-        mina.setNimimerkki(kayttajaNimi);
+        User mina = new User();
+        mina.setUserName(kayttajaNimi);
 
         // luodaan uusi sijaintiolio, johon koordinaatit sijoitetaan
         // TODO: pyydetään oma alkusijainti laitteen paikannuspalvelulta
-        Sijainti olenTassa = new Sijainti(63.731818, 25.333794);
+        Location olenTassa = new Location(63.731818, 25.333794);
 
         // asetetaan sijaintiolio mina-olion ominaisuudeksi
-        mina.setSijainti(olenTassa);
+        mina.setLocation(olenTassa);
 
 
         // luodaan ajastin, joka lähettää omaa sijaintia serverille säännöllisesti
@@ -404,7 +403,7 @@ public class MapsActivity extends android.support.v7.app.AppCompatActivity
     }
 
     @Override
-    public void onLocationChanged(Location location) {
+    public void onLocationChanged(android.location.Location location) {
         Log.d("oma", "paikka vaihtui");
         mLastLocation = location;
     }
@@ -418,9 +417,9 @@ public class MapsActivity extends android.support.v7.app.AppCompatActivity
 
         // TODO: tässä päivitetään kayttajat-taulukossa olevien käyttäjien sijainnit
         for(int i=0; i<kayttajat.size(); i++) {
-            Kayttaja kaveri = kayttajat.get(i);
+            User kaveri = kayttajat.get(i);
 
-            String kid = kaveri.getKayttaja_id() + "";
+            String kid = kaveri.getUser_id() + "";
 
             // minä näyn punaisena
             if(kid.equals(kayttajaId)) {
@@ -437,23 +436,23 @@ public class MapsActivity extends android.support.v7.app.AppCompatActivity
             }
 
             Marker m = mMap.addMarker(new MarkerOptions()
-                    .position(new LatLng(kaveri.getSijainti().getLat(), kaveri.getSijainti().getLng()))
-                    .title(kaveri.getNimimerkki())
+                    .position(new LatLng(kaveri.getLocation().getLat(), kaveri.getLocation().getLng()))
+                    .title(kaveri.getUserName())
                     .alpha(markerinAlfa(kaveri)) // haetaan alfa iän mukaan
                     .icon(BitmapDescriptorFactory.defaultMarker(kuvakeVari))
-                            .snippet("nähty " + kaveri.getViimeksi_nahty()));
-            kaveri.setMerkki(m);
+                            .snippet("nähty " + kaveri.getLastSeen()));
+            kaveri.setMarker(m);
         }
     }
 
 
-    private float markerinAlfa(Kayttaja k) {
+    private float markerinAlfa(User k) {
         float palautusAlfa = -1f;
 
         try {
             // serveriltä tullut nykyinen aika
             Calendar serveriAika = Calendar.getInstance();
-            String[] sosat = k.getServeriAika().split(" ");
+            String[] sosat = k.getServerTime().split(" ");
             String[] spvmOsat = sosat[0].split("-");
             String[] saikaOsat = sosat[1].split(":");
             serveriAika.set(Integer.parseInt(spvmOsat[0]),// vuosi
@@ -465,7 +464,7 @@ public class MapsActivity extends android.support.v7.app.AppCompatActivity
 
             // käyttäjän viimeksi-nähty-aika
             Calendar viim_nahty = Calendar.getInstance();
-            String[] osat = k.getViimeksi_nahty().split(" ");
+            String[] osat = k.getLastSeen().split(" ");
             String[] pvmOsat = osat[0].split("-");
             String[] aikaOsat = osat[1].split(":");
             viim_nahty.set(Integer.parseInt(pvmOsat[0]),// vuosi
@@ -573,8 +572,8 @@ public class MapsActivity extends android.support.v7.app.AppCompatActivity
 
                 // poistetaan kaikki vanhat markkerit kartalta
                 for(int i=0; i<kayttajat.size(); i++) {
-                    kayttajat.get(i).getMerkki().remove();
-                    kayttajat.get(i).setMerkki(null);
+                    kayttajat.get(i).getMarker().remove();
+                    kayttajat.get(i).setMarker(null);
                 }
 
                 // tyhjennetään käyttäjät-taulukko vanhoista merkinnöistä
@@ -583,26 +582,26 @@ public class MapsActivity extends android.support.v7.app.AppCompatActivity
                 // käydään JSONtaulukko läpi ja luodaan ryhma-olio, jokaisesta
                 // JSON-objektista
                 for(int i=0; i<ryhmalista.length(); i++) {
-                    Kayttaja k = new Kayttaja();
+                    User k = new User();
 
                     // haetaan JSONarraysta i:nnes objekti
                     JSONObject job = ryhmalista.getJSONObject(i);
 
                     // täytetään käyttäjäolion kentät JSONobjektista
-                    Sijainti s = new Sijainti();
-                    s.setSijainti_id(job.getInt("sijainti_id"));
+                    Location s = new Location();
+                    s.setLocation_id(job.getInt("sijainti_id"));
                     s.setLat(job.getDouble("lat"));
                     s.setLng(job.getDouble("lng"));
-                    s.setAikaleima(job.getString("aikaleima"));
-                    s.setKayttaja_id(job.getInt("kayttaja_id"));
+                    s.setTimestamp(job.getString("aikaleima"));
+                    s.setUser_id(job.getInt("kayttaja_id"));
 
-                    Kayttaja kaveri = new Kayttaja();
-                    kaveri.setKayttaja_id(job.getInt("kayttaja_id"));
-                    kaveri.setNimimerkki(job.getString("nimimerkki"));
-                    kaveri.setViimeksi_nahty(job.getString("viimeksi_nahty"));
-                    kaveri.setRyhma_id(job.getInt("ryhma_id"));
-                    kaveri.setServeriAika(job.getString("serveriaika"));
-                    kaveri.setSijainti(s);
+                    User kaveri = new User();
+                    kaveri.setUser_id(job.getInt("kayttaja_id"));
+                    kaveri.setUserName(job.getString("nimimerkki"));
+                    kaveri.setLastSeen(job.getString("viimeksi_nahty"));
+                    kaveri.setGroup_id(job.getInt("ryhma_id"));
+                    kaveri.setServerTime(job.getString("serveriaika"));
+                    kaveri.setLocation(s);
 
                     // lisätään luotu käyttäjäolio aktiviteetin kayttajat-taulukkoon
                     kayttajat.add(kaveri);

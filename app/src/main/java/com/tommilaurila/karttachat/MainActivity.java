@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity
         LisaaKayttajaDialogFragment.LisaaKayttajaDialogListener {
 
     // taulukko, joka sisältää ryhmäolioita
-    public ArrayList<Ryhma> ryhmat = new ArrayList<>();
+    public ArrayList<Group> ryhmat = new ArrayList<>();
     ListView lvRyhmaLista;
     RyhmalistaAdapter arrayAdapter;
     String kayttaja;
@@ -79,9 +79,9 @@ public class MainActivity extends AppCompatActivity
                 intent.putExtra("xtraKayttajaId", k_id);
                 intent.putExtra("xtraKayttajaNimi", kayttaja);
                 // lisätään tyhjät lainaukset loppuun -> string-muoto
-                intent.putExtra("xtraRyhmaId", ryhmat.get(position).getRyhma_id() + "");
-                intent.putExtra("xtraRyhmaNimi", ryhmat.get(position).getNimi());
-                intent.putExtra("xtraRyhmaLuoja", ryhmat.get(position).getLuoja() + "");
+                intent.putExtra("xtraRyhmaId", ryhmat.get(position).getGroup_id() + "");
+                intent.putExtra("xtraRyhmaNimi", ryhmat.get(position).getGroupName());
+                intent.putExtra("xtraRyhmaLuoja", ryhmat.get(position).getCreator() + "");
 
                 startActivity(intent);
             }
@@ -330,17 +330,17 @@ public class MainActivity extends AppCompatActivity
                 // käydään JSONtaulukko läpi ja luodaan ryhma-olio, jokaisesta
                 // JSON-objektista
                 for(int i=0; i<ryhmalista.length(); i++) {
-                    Ryhma r = new Ryhma();
+                    Group r = new Group();
 
                     // haetaan JSONarraysta i:nnes objekti
                     JSONObject job = ryhmalista.getJSONObject(i);
 
                     // täytetään ryhmäolion kentät JSONobjektista
-                    r.setRyhma_id(job.getInt("ryhma_id"));
-                    r.setLuoja(job.getInt("luoja"));
-                    r.setNimi(job.getString("nimi"));
-                    r.setSalasana(job.getString("salasana"));
-                    r.setPerustamisaika(job.getString("perustamisaika"));
+                    r.setGroup_id(job.getInt("ryhma_id"));
+                    r.setCreator(job.getInt("luoja"));
+                    r.setGroupName(job.getString("nimi"));
+                    r.setGroupPassword(job.getString("salasana"));
+                    r.setCreationTime(job.getString("perustamisaika"));
 
                     // lisätään luotu ryhmäolio aktiviteetin ryhmat-taulukkoon
                     ryhmat.add(r);
