@@ -238,11 +238,18 @@ public class DatabaseHandler extends SQLiteOpenHelper{
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        values.put(KEY_USER, user.getUserName());
+        values.put(KEY_USERNAME, user.getUserName()); // Username
+        values.put(KEY_USERPASSWORD ,user.getPassword());// Users password
+        values.put(KEY_USERLEVEL ,user.getLevel());// Users level (admin, normal, etc.)
+        values.put(KEY_USERCREATIONTIME ,user.getCreationTime());// Time the user was created
+        values.put(KEY_USERLASTSEEN ,user.getLastSeen());// Time the user has been updated
+        values.put(KEY_USERGROUPID ,user.getGroup_id());// Users current groupId
+        values.put(KEY_USERSERVERTIME ,user.getServerTime());// Users last server time?
+
 
         // updating row
         return db.update(TABLE_USERS, values, KEY_ID + "=?",
-                new String[]{String.valueOf(user.getId())});
+                new String[]{String.valueOf(user.getUser_id())});
 
     }
 
@@ -252,7 +259,7 @@ public class DatabaseHandler extends SQLiteOpenHelper{
         //Initializing database connection
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete(TABLE_USERS, KEY_ID + " = ?",
-                new String[]{String.valueOf(user.getId())});
+                new String[]{String.valueOf(user.getUser_id())});
         db.close();
 
         //Log.d("oma", "All users cleared");
