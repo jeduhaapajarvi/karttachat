@@ -7,6 +7,8 @@ public class Group {
     private int group_id;
     private int creator; // ryhmän luojan id
     private String groupName;
+
+    /*TODO Group object should not need a password field since it should never be accessed from the device itself*/
     private String groupPassword;
     private String creationTime;
 

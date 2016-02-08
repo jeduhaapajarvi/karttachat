@@ -202,6 +202,9 @@ public class MainActivity extends AppCompatActivity
         // tallennetaan käyttäjätunnus ja salasana puhelimen muistiin
         // TODO: muuta kovakoodatut avainnimet
         // TODO: lähetä käyttäjätiedot palvelimelle
+
+        //!!!GlobalVariables has a method for this, needs serverside implementation!!!
+
         SharedPreferences sharedPref = getSharedPreferences(getString(R.string.pref_nimi), Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString("kayttajatunnus", etKayttajaNimi.getText().toString());

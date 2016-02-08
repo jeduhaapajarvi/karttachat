@@ -70,8 +70,8 @@ public class DatabaseHandler extends SQLiteOpenHelper{
         //Build locations table statement
         String CREATE_LOCATIONS_TABLE = "CREATE TABLE " + TABLE_LOCATIONS + "("
                 + KEY_ID + " INTEGER PRIMARY KEY NOT NULL, "
-                + KEY_LOCATIONLAT + " TEXT, "
-                + KEY_LOCATIONLNG + " TEXT, "
+                + KEY_LOCATIONLAT + " DOUBLE, "
+                + KEY_LOCATIONLNG + " DOUBLE, "
                 + KEY_LOCATIONTIMESTAMP + " TEXT, "
                 + KEY_LOCATIONUSERID + " TEXT, "
                 + ")";
@@ -83,10 +83,12 @@ public class DatabaseHandler extends SQLiteOpenHelper{
                 + KEY_GROUPCREATIONTIME + " TEXT "
                 + ")";
         Log.d("oma", "Create users table: " + CREATE_USERS_TABLE);
-        Log.d("oma", "Create users table: " + CREATE_LOCATIONS_TABLE);
+        Log.d("oma", "Create locations table: " + CREATE_LOCATIONS_TABLE);
+        Log.d("oma", "Create groups table: " + CREATE_GROUPS_TABLE);
 
         db.execSQL(CREATE_USERS_TABLE);
         db.execSQL(CREATE_LOCATIONS_TABLE);
+        db.execSQL(CREATE_GROUPS_TABLE);
         Log.d("oma", "TABLE: " + db.toString());
     }
 
@@ -271,14 +273,16 @@ public class DatabaseHandler extends SQLiteOpenHelper{
     /*---LOCATIONS---*/
 
     //Create a new location and assign it for a single user
-    public long newLocation(Location location, User user){
+    public long newLocation(Location location){
         SQLiteDatabase db = this.getWritableDatabase();
         long newLocationId;
 
         ContentValues values = new ContentValues();
-        values.put(KEY_USERID, user.getId());
-        values.put(KEY_LAT, location.getLat());
-        values.put(KEY_LNG, location.getLng());
+        values.put(KEY_ID , location.getLocation_id());
+        values.put(KEY_LOCATIONLAT , location.getLat());
+        values.put(KEY_LOCATIONLNG , location.getLng());
+        values.put(KEY_LOCATIONTIMESTAMP , location.getTimestamp());
+        values.put(KEY_LOCATIONUSERID , location.getUser_id());
 
         newLocationId = db.insert(TABLE_LOCATIONS, null, values);
         db.close();
@@ -296,18 +300,15 @@ public class DatabaseHandler extends SQLiteOpenHelper{
         Log.d("oma", selectQuery);
 
         Cursor c = db.rawQuery(selectQuery, null);
+        Location returnLoc = new Location();
 
         if(c != null){
             c.moveToFirst();
+
+            returnLoc.setLocation_id(c.getInt(c.getColumnIndex(KEY_ID)));
+
+            db.close();
         }
-
-        Location returnLoc = new Location();
-        returnLoc.setId(c.getInt(c.getColumnIndex(KEY_ID)));
-        returnLoc.setUserId(c.getInt(c.getColumnIndex(KEY_USERID)));
-        returnLoc.setLat(c.getInt(c.getColumnIndex(KEY_LAT)));
-        returnLoc.setLng(c.getInt(c.getColumnIndex(KEY_LNG)));
-
-        db.close();
         return returnLoc;
     }
 
@@ -316,7 +317,7 @@ public class DatabaseHandler extends SQLiteOpenHelper{
         SQLiteDatabase db = this.getReadableDatabase();
 
         String selectQuery = "SELECT * FROM " + TABLE_LOCATIONS + " WHERE "
-                + KEY_USERID + " = " + user.getId();
+                + KEY_LOCATIONUSERID + " = " + user.getUser_id();
 
         Cursor c = db.rawQuery(selectQuery, null);
         List<Location> locationList = new ArrayList<>();
@@ -326,10 +327,12 @@ public class DatabaseHandler extends SQLiteOpenHelper{
                 Log.d("oma", "LocFromDB cursor: " + c.getString(2) + " " + c.getString(3));
 
                 Location location = new Location();
-                location.setId(Integer.parseInt(c.getString(0)));
-                location.setUserId(Integer.parseInt(c.getString(1)));
-                location.setLat(Float.parseFloat(c.getString(2)));
-                location.setLng(Float.parseFloat(c.getString(3)));
+
+                location.setLocation_id(c.getInt(0));
+                location.setLat(c.getDouble(1));
+                location.setLng(c.getDouble(2));
+                location.setTimestamp(c.getString(3));
+                location.setUser_id(c.getInt(4));
                 // Adding location to list
                 locationList.add(location);
             } while (c.moveToNext());
@@ -346,23 +349,24 @@ public class DatabaseHandler extends SQLiteOpenHelper{
         SQLiteDatabase db = this.getWritableDatabase();
 
         String selectQuery = "SELECT * FROM " + TABLE_LOCATIONS + " WHERE "
-                + KEY_USERID + " = " + user.getId() + " ORDER BY " + KEY_ID + " DESC limit 1";
+                + KEY_LOCATIONUSERID + " = " + user.getUser_id() + " ORDER BY " + KEY_ID + " DESC limit 1";
 
         //Log.d("oma", selectQuery);
 
         Cursor c = db.rawQuery(selectQuery, null);
+        Location returnLoc = new Location();
 
         if(c != null){
             c.moveToFirst();
+
+            returnLoc.setLocation_id(c.getInt(0));
+            returnLoc.setLat(c.getDouble(1));
+            returnLoc.setLng(c.getDouble(2));
+            returnLoc.setTimestamp(c.getString(3));
+            returnLoc.setUser_id(c.getInt(4));
+
+            c.close();
         }
-
-        Location returnLoc = new Location();
-        returnLoc.setId(c.getInt(c.getColumnIndex(KEY_ID)));
-        returnLoc.setUserId(c.getInt(c.getColumnIndex(KEY_USERID)));
-        returnLoc.setLat(c.getFloat(c.getColumnIndex(KEY_LAT)));
-        returnLoc.setLng(c.getFloat(c.getColumnIndex(KEY_LNG)));
-
-        c.close();
         return returnLoc;
     }
 
@@ -370,21 +374,24 @@ public class DatabaseHandler extends SQLiteOpenHelper{
 
         //Initializing database connection
         SQLiteDatabase db = this.getWritableDatabase();
-        db.delete(TABLE_LOCATIONS, KEY_USERID + " = ?",
-                new String[]{String.valueOf(user.getId())});
+        db.delete(TABLE_LOCATIONS, KEY_LOCATIONUSERID + " = ?",
+                new String[]{String.valueOf(user.getUser_id())});
         db.close();
 
     }
     /*---/LOCATIONS---*/
 
     /*---GROUPS---*/
-    public void newGroup(Group newGroup){
+    public void newGroup(Group group){
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        values.put(KEY_GROUPNAME, newGroup.getGroupName());
-        values.put(KEY_GROUPPWORD, newGroup.getGroupPassWord());
-        values.put(KEY_GROUPCREATOR, newGroup.getCreator().getId());
+        values.put(KEY_ID, group.getGroup_id());
+        values.put(KEY_GROUPCREATOR, group.getCreator());
+        values.put(KEY_GROUPNAME, group.getGroupName());
+        values.put(KEY_GROUPPASSWORD, group.getGroupPassword());
+        values.put(KEY_GROUPCREATIONTIME, group.getCreationTime());
+
 
         db.insert(TABLE_GROUPS, null, values);
         db.close();
@@ -394,7 +401,9 @@ public class DatabaseHandler extends SQLiteOpenHelper{
         SQLiteDatabase db = this.getWritableDatabase();
 
         String selectQuery = "SELECT * FROM " + TABLE_GROUPS + " WHERE "
-                + KEY_ID + " = " + group.getGroupId() + " ORDER BY " + KEY_ID + " DESC limit 1";
+                + KEY_ID + " = " + group.getGroup_id() + " ORDER BY " + KEY_ID + " DESC limit 1";
     }
+
+
     /*---/GROUPS---*/
 }

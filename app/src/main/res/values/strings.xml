@@ -94,7 +94,13 @@
     <string name="pref_ringtone_silent">Silent</string>
 
     <string name="pref_title_vibrate">Vibrate</string>
-
+    <string name="path_public_server">http://hpj.fi/</string>
+    <string name="path_get_groups">r0/ryhma/haeryhmat</string>
+    <string name="path_post_location">r0/sijainti/ilmoita</string>
+    <string name="path_add_user">r0/kayttaja/lisaa</string>
+    <string name="path_add_group">r0/ryhma/lisaa</string>
+    <string name="path_leave_group">r0/kayttaja/poistaryhmasta</string>
+    <string name="path_user_login">r0/kayttaja/login</string>
 
 
 </resources>
