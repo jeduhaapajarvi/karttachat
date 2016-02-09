@@ -20,6 +20,7 @@ public class GlobalVariables {
     private static final String USERLOGIN = "userlogin";
     private static final String USERREGISTER = "userregister";
     private static final String GROUPCREATE = "groupcreate";
+    private static final String LOCATIONREPORT = "locationreport";
 
     Context context;
     User currentUser;
@@ -234,6 +235,14 @@ public class GlobalVariables {
                     postInfo.put("rn", params[2]);
                     postInfo.put("rs", params[3]);
                     break;
+                case LOCATIONREPORT:
+                    url = R.string.path_public_server + R.string.path_post_location + "";
+                    postInfo.put("uid", params[1]);
+                    postInfo.put("gid", params[2]);
+                    postInfo.put("lat", params[3]);
+                    postInfo.put("lng", params[4]);
+                    postInfo.put("msg", params[5]);
+                    break;
                 default:
                     //If networkPostTask gets invalid parameters, log it and set url to
                     //servers "bare" address to avoid nullPointerExceptions
@@ -255,11 +264,11 @@ public class GlobalVariables {
 
                             User user = new User();
 
-                            user.setUser_id(jsonObject.getInt("user_id"));
-                            user.setUserName(jsonObject.getString("username"));
-                            user.setLevel(jsonObject.getInt("userlevel"));
-                            user.setCreationTime(jsonObject.getString("usercreationtime"));
-                            user.setLastSeen(jsonObject.getString("userlastseen"));
+                            user.setUser_id(jsonObject.getInt("kayttaja_id"));
+                            user.setUserName(jsonObject.getString("nimimerkki"));
+                            user.setLevel(jsonObject.getInt("taso"));
+                            user.setCreationTime(jsonObject.getString("perustamisaika"));
+                            user.setLastSeen(jsonObject.getString("viimeksi_nahty"));
                             user.setGroup_id(jsonObject.getInt("usergroupid"));
                             user.setServerTime(jsonObject.getString("userservertime"));
 
@@ -292,6 +301,14 @@ public class GlobalVariables {
 
                         } catch (Exception e){
                             Log.d("oma", "onPostExecute GROUPCREATE error: " + e);
+                        }
+                        break;
+                    case LOCATIONREPORT:
+                        try {
+                            JSONArray jsonArray = new JSONArray(result[1]);
+
+                        } catch (Exception e){
+                            Log.d("oma", "onPostExecute LOCATIONREPORT error: " + e);
                         }
                         break;
                 }

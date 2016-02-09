@@ -43,6 +43,7 @@ public class DatabaseHandler extends SQLiteOpenHelper{
     private static final String KEY_LOCATIONLNG = "lng";
     private static final String KEY_LOCATIONTIMESTAMP = "timestamp";
     private static final String KEY_LOCATIONUSERID = "userid";
+    private static final String KEY_LOCATIONGROUPID = "groupid";
     //GROUPS table column names
     private static final String KEY_GROUPCREATOR = "groupcreator";
     private static final String KEY_GROUPNAME = "groupname";
@@ -74,6 +75,7 @@ public class DatabaseHandler extends SQLiteOpenHelper{
                 + KEY_LOCATIONLNG + " DOUBLE, "
                 + KEY_LOCATIONTIMESTAMP + " TEXT, "
                 + KEY_LOCATIONUSERID + " TEXT, "
+                + KEY_LOCATIONGROUPID + " TEXT "
                 + ")";
         String CREATE_GROUPS_TABLE = "CREATE TABLE " + TABLE_GROUPS + "("
                 + KEY_ID + " INTEGER PRIMARY KEY NOT NULL, "
