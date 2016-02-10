@@ -5,11 +5,15 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import com.google.android.gms.maps.model.Marker;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 
 /**
  * Created by sakari.saastamoinen on 5.2.2016.
@@ -25,6 +29,7 @@ public class DatabaseHandler extends SQLiteOpenHelper{
     private static final String TABLE_USERS = "users";
     private static final String TABLE_LOCATIONS = "locations";
     private static final String TABLE_GROUPS = "groups";
+    private static final String TABLE_GROUP_USERS = "group_users";
     // Common columns names
     private static final String KEY_ID = "id";
     //USERS table column names
@@ -49,6 +54,9 @@ public class DatabaseHandler extends SQLiteOpenHelper{
     private static final String KEY_GROUPNAME = "groupname";
     private static final String KEY_GROUPPASSWORD = "grouppasswird";
     private static final String KEY_GROUPCREATIONTIME = "groupcreationtime";
+    //GROUP_USERS table column names
+    private static final String KEY_GROUP_USERS_USERID = "userid";
+    private static final String KEY_GROUP_USERS_GROUPID = "groupid";
 
     public DatabaseHandler(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -65,8 +73,8 @@ public class DatabaseHandler extends SQLiteOpenHelper{
                 + KEY_USERLEVEL + " INTEGER, "
                 + KEY_USERCREATIONTIME + " TEXT, "
                 + KEY_USERLASTSEEN + " TEXT, "
-                + KEY_USERGROUPID + " TEXT, "
-                + KEY_USERSERVERTIME + " TEXT, "
+                + KEY_USERGROUPID + " INTEGER, "
+                + KEY_USERSERVERTIME + " TEXT "
                 + ")";
         //Build locations table statement
         String CREATE_LOCATIONS_TABLE = "CREATE TABLE " + TABLE_LOCATIONS + "("
@@ -79,10 +87,15 @@ public class DatabaseHandler extends SQLiteOpenHelper{
                 + ")";
         String CREATE_GROUPS_TABLE = "CREATE TABLE " + TABLE_GROUPS + "("
                 + KEY_ID + " INTEGER PRIMARY KEY NOT NULL, "
-                + KEY_GROUPCREATOR + " TEXT, "
+                + KEY_GROUPCREATOR + " INTEGER, "
                 + KEY_GROUPNAME + " TEXT, "
-                + KEY_GROUPPASSWORD + " TEXT "
+                + KEY_GROUPPASSWORD + " TEXT, "
                 + KEY_GROUPCREATIONTIME + " TEXT "
+                + ")";
+        String CREATE_GROUP_USERS_TABLE = "CREATE TABLE " + TABLE_GROUP_USERS + "("
+                + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + KEY_GROUP_USERS_GROUPID + " INTEGER, "
+                + KEY_GROUP_USERS_USERID + " INTEGER"
                 + ")";
         Log.d("oma", "Create users table: " + CREATE_USERS_TABLE);
         Log.d("oma", "Create locations table: " + CREATE_LOCATIONS_TABLE);
@@ -91,6 +104,7 @@ public class DatabaseHandler extends SQLiteOpenHelper{
         db.execSQL(CREATE_USERS_TABLE);
         db.execSQL(CREATE_LOCATIONS_TABLE);
         db.execSQL(CREATE_GROUPS_TABLE);
+        db.execSQL(CREATE_GROUP_USERS_TABLE);
         Log.d("oma", "TABLE: " + db.toString());
     }
 
@@ -101,6 +115,7 @@ public class DatabaseHandler extends SQLiteOpenHelper{
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_LOCATIONS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_GROUPS);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_GROUP_USERS);
 
         // Create tables again
         onCreate(db);
@@ -402,8 +417,88 @@ public class DatabaseHandler extends SQLiteOpenHelper{
     public void joinGroup(Group group, User user){
         SQLiteDatabase db = this.getWritableDatabase();
 
-        String selectQuery = "SELECT * FROM " + TABLE_GROUPS + " WHERE "
-                + KEY_ID + " = " + group.getGroup_id() + " ORDER BY " + KEY_ID + " DESC limit 1";
+        ContentValues values = new ContentValues();
+        values.put(KEY_GROUP_USERS_GROUPID, group.getGroup_id());
+        values.put(KEY_GROUP_USERS_USERID, user.getUser_id());
+
+        db.insert(TABLE_GROUP_USERS, null, values);
+        db.close();
+    }
+
+    public List<Group> getAllGroups(){
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        List<Group> groupList = new ArrayList<>();
+        String selectQuery = "SELECT  * FROM " + TABLE_GROUPS;
+        Cursor cursor = db.rawQuery(selectQuery, null);
+
+        // looping through all rows and adding to list
+        if (cursor.moveToFirst()) {
+            do {
+                Group group = new Group();
+
+                group.setGroup_id(cursor.getInt(0));
+                group.setCreator(cursor.getInt(1));
+                group.setGroupName(cursor.getString(2));
+                group.setCreationTime(cursor.getString(4));
+                // Adding user to list
+                groupList.add(group);
+            } while (cursor.moveToNext());
+        }
+
+        cursor.close();
+        // return user list
+        return groupList;
+    }
+
+    public void clearGroups(){
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_GROUPS);
+
+        String CREATE_GROUPS_TABLE = "CREATE TABLE " + TABLE_GROUPS + "("
+                + KEY_ID + " INTEGER PRIMARY KEY NOT NULL, "
+                + KEY_GROUPCREATOR + " TEXT, "
+                + KEY_GROUPNAME + " TEXT, "
+                + KEY_GROUPPASSWORD + " TEXT "
+                + KEY_GROUPCREATIONTIME + " TEXT "
+                + ")";
+
+        db.execSQL(CREATE_GROUPS_TABLE);
+    }
+
+    public ArrayList<User> getUsersOfGroup(Group group){
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        ArrayList<User> userList = new ArrayList<>();
+
+        String selectQuery = "SELECT a." + KEY_GROUP_USERS_USERID
+                + " FROM " + TABLE_GROUP_USERS
+                + " WHERE " + KEY_GROUP_USERS_GROUPID
+                + " = " + group.getGroup_id()
+                + " LEFT JOIN " + TABLE_USERS
+                + " USING(" + KEY_ID;
+
+        Cursor c = db.rawQuery(selectQuery, null);
+
+        if (c.moveToFirst()) {
+            do {
+                User user = new User();
+
+                user.setUser_id(c.getInt(0));
+                user.setUserName(c.getString(1));
+                user.setPassword(c.getString(2));
+                user.setLevel(c.getInt(3));
+                user.setCreationTime(c.getString(4));
+                user.setGroup_id(c.getInt(5));
+                user.setServerTime(c.getString(6));
+                // Adding user to list
+                userList.add(user);
+
+            } while (c.moveToNext());
+        }
+
+        return userList;
     }
 
 

@@ -1,12 +1,15 @@
 package com.tommilaurila.karttachat;
 
+import android.app.Service;
 import android.content.Context;
+import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -20,10 +23,14 @@ public class GlobalVariables {
     private static final String USERLOGIN = "userlogin";
     private static final String USERREGISTER = "userregister";
     private static final String GROUPCREATE = "groupcreate";
+    private static final String GROUPJOIN = "groupjoin";
+    private static final String GROUPGETALL = "getallgroups";
     private static final String LOCATIONREPORT = "locationreport";
 
+    MainActivity ma = new MainActivity();
     Context context;
     User currentUser;
+    public ArrayList<Group> ryhmat = new ArrayList<>();
 
     public GlobalVariables(){
 
@@ -185,8 +192,31 @@ public class GlobalVariables {
                 group.getGroupPassword());
     }
 
-    public void setGroupInactive(User user){
+    private void addGroup(Group group){
+        DatabaseHandler db = new DatabaseHandler(context);
 
+        db.newGroup(group);
+    }
+
+    public ArrayList<Group> getAllGroups(){
+        ArrayList<Group> groupList;
+
+        DatabaseHandler db = new DatabaseHandler(context);
+
+        groupList = new ArrayList<>(db.getAllGroups());
+
+        if(groupList.size() < 1){
+            Log.d("oma", "Fetching groups from server.");
+            new networkPostTask().execute(GROUPGETALL);
+        }
+
+        return groupList;
+    }
+
+    public List<User> getUsersOfGroup(Group group){
+        DatabaseHandler db = new DatabaseHandler(context);
+
+        return db.getUsersOfGroup(group);
     }
 
     /*---/GROUPS---*/
@@ -200,7 +230,7 @@ public class GlobalVariables {
             //Initialize ApuHttp object, returnString and url -Strings and
             // postInfo HashMap for later use
             ApuHttp httpHelper = new ApuHttp();
-            String returnString[] = new String[]{};
+            String returnString[] = new String[2];
             String url;
             HashMap<String, String> postInfo = new HashMap<>();
 
@@ -210,7 +240,8 @@ public class GlobalVariables {
 
             switch (params[0]){
                 case USERLOGIN:
-                    url = R.string.path_public_server + R.string.path_user_login + "";
+                    url =  context.getString(R.string.path_public_server) +
+                            context.getString(R.string.path_user_login);
                     /*params:
                     * 1 username
                     * 2 password*/
@@ -218,15 +249,21 @@ public class GlobalVariables {
                     postInfo.put("ss", params[2]);
                     break;
                 case USERREGISTER:
-                    url = R.string.path_public_server + R.string.path_add_user + "";
+                    url = context.getString(R.string.path_public_server) +
+                            context.getString(R.string.path_add_user);
                     /*params:
                     * 1 username
                     * 2 password*/
                     postInfo.put("kt", params[1]);
                     postInfo.put("ss", params[2]);
                     break;
+                case GROUPGETALL:
+                    url = context.getString(R.string.path_public_server) +
+                            context.getString(R.string.path_get_groups);
+                    break;
                 case GROUPCREATE:
-                    url = R.string.path_public_server + R.string.path_add_group + "";
+                    url = context.getText(R.string.path_public_server) +
+                            context.getString(R.string.path_add_group);
                     /*params:
                     * 1 creator user id
                     * 2 group name
@@ -235,8 +272,20 @@ public class GlobalVariables {
                     postInfo.put("rn", params[2]);
                     postInfo.put("rs", params[3]);
                     break;
+                case GROUPJOIN:
+                    url = context.getString(R.string.path_public_server) +
+                            context.getString(R.string.path_join_group);
+                    /*params:
+                    * 1 joining user id
+                    * 2 group name
+                    * 3 group password*/
+                    postInfo.put("uid", params[1]);
+                    postInfo.put("rn", params[2]);
+                    postInfo.put("rs", params[3]);
+                    break;
                 case LOCATIONREPORT:
-                    url = R.string.path_public_server + R.string.path_post_location + "";
+                    url = context.getString(R.string.path_public_server) +
+                            context.getString(R.string.path_post_location);
                     postInfo.put("uid", params[1]);
                     postInfo.put("gid", params[2]);
                     postInfo.put("lat", params[3]);
@@ -247,9 +296,10 @@ public class GlobalVariables {
                     //If networkPostTask gets invalid parameters, log it and set url to
                     //servers "bare" address to avoid nullPointerExceptions
                     Log.d("oma", "Invalid networkPostTask parameter[0] '" + params[0] + "' !");
-                    url = R.string.path_public_server + "";
+                    url = context.getString(R.string.path_public_server);
             }
 
+            Log.d("oma", "URL: " + url);
             returnString[1] = httpHelper.postData(url, postInfo);
             return returnString;
         }
@@ -284,6 +334,36 @@ public class GlobalVariables {
                             Log.d("oma", "onPostExecute USERREGISTER error: " + e);
                         }
                         break;
+                    case GROUPGETALL:
+                        try {
+                            JSONArray jsonArray = new JSONArray(result[1]);
+
+                            // Go through the JSONarray, extract the JSONobjects from it
+                            // and create Group objects from them and add them to group table
+                            for(int i=0; i<jsonArray.length(); i++) {
+                                Group group = new Group();
+
+                                JSONObject jsonObject = jsonArray.getJSONObject(i);
+
+                                group.setGroup_id(jsonObject.getInt("ryhma_id"));
+                                group.setCreator(jsonObject.getInt("luoja"));
+                                group.setGroupName(jsonObject.getString("nimi"));
+                                group.setGroupPassword(jsonObject.getString("salasana"));
+                                group.setCreationTime(jsonObject.getString("perustamisaika"));
+
+                                addGroup(group);
+                                ryhmat.add(group);
+
+                                Log.d("oma", "Added group: " + group.toString());
+                            }//for
+                        }//try
+                        catch (Exception e) {
+                            Log.d("oma", "tuli virhe "+ e.toString());
+                        }
+
+                        ma.arrayAdapter.notifyDataSetChanged();
+
+                        break;
                     case GROUPCREATE:
                         try {
                             JSONObject jsonObject = new JSONObject(result[1]);
@@ -303,10 +383,31 @@ public class GlobalVariables {
                             Log.d("oma", "onPostExecute GROUPCREATE error: " + e);
                         }
                         break;
+                    case GROUPJOIN:
+                        break;
                     case LOCATIONREPORT:
+                        //try to parse a JSONarray from the response
                         try {
                             JSONArray jsonArray = new JSONArray(result[1]);
 
+                            for (int i = 0; i < jsonArray.length(); i++){
+                                User user = new User();
+                                Location location = new Location();
+                                JSONObject jsonObject = jsonArray.getJSONObject(i);
+
+                                location.setLocation_id(jsonObject.getInt("sijainti_id"));
+                                location.setLat(jsonObject.getDouble("lat"));
+                                location.setLng(jsonObject.getDouble("lng"));
+                                location.setTimestamp(jsonObject.getString("aikaleima"));
+                                location.setUser_id(jsonObject.getInt("kayttaja_id"));
+                                location.setGroup_id(jsonObject.getInt("ryhma_id"));
+
+                                user.setUser_id(jsonObject.getInt("kayttaja_id"));
+                                user.setUserName(jsonObject.getString("nimimerkki"));
+                                user.setLastSeen(jsonObject.getString("viimeksi_nahty"));
+                                user.setGroup_id(jsonObject.getInt("ryhma_id"));
+                                user.setServerTime(jsonObject.getString("serveriaika"));
+                            }
                         } catch (Exception e){
                             Log.d("oma", "onPostExecute LOCATIONREPORT error: " + e);
                         }

@@ -34,6 +34,8 @@ public class MainActivity extends AppCompatActivity
     String kayttaja;
     String ryhmaId;
 
+    //GlobalVariables gv = new GlobalVariables(this);
+
     final String LOPETA_SEURANTA = "com.tommilaurila.tie13karttademo.lopetaseuranta";
 
     @Override
@@ -51,6 +53,7 @@ public class MainActivity extends AppCompatActivity
         // haetaan ryhmät www-palvelimelta asynctaskin avulla
         haeRyhmatTask task = new haeRyhmatTask();
         task.execute(new String[]{getString(R.string.polku_hae_ryhmat)});
+        //ryhmat = gv.getAllGroups();
 
         // etsitään listview-komponentti layoutista
         lvRyhmaLista = (ListView)findViewById(R.id.lvRyhmaLista);
@@ -89,6 +92,9 @@ public class MainActivity extends AppCompatActivity
 
         // yritetään lukea käyttäjätunnus puhelimen muistista
         // jos sitä ei löydy, näytetään rekisteröintidialogi
+
+        //gv.currentUser.getUserName();
+
         SharedPreferences sharedPref = getSharedPreferences(getString(R.string.pref_nimi), Context.MODE_PRIVATE);
         kayttaja = sharedPref.getString("kayttajatunnus", "");
         Log.d("oma", "luettiin muistista käyttäjä " + kayttaja);
@@ -217,6 +223,11 @@ public class MainActivity extends AppCompatActivity
         // User touched the dialog's negative button
     }
 
+    public void onDebugClick(View v){
+        Log.d("oma", "onDebugClick: Add getAllGroups call here for testing");
+        //ArrayList<Group> groupList = new ArrayList<>(gv.getAllGroups());
+
+    }
 
     //sisäluokka, joka hoitaa yhteydenottoja serverin suuntaan
     // AsyncTask<params, progress, result>
