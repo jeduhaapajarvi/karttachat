@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity
     String kayttaja;
     String ryhmaId;
 
-    //GlobalVariables gv = new GlobalVariables(this);
+    GlobalVariables gv = new GlobalVariables(this);
 
     final String LOPETA_SEURANTA = "com.tommilaurila.tie13karttademo.lopetaseuranta";
 
@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity
         // haetaan ryhmät www-palvelimelta asynctaskin avulla
         haeRyhmatTask task = new haeRyhmatTask();
         task.execute(new String[]{getString(R.string.polku_hae_ryhmat)});
-        //ryhmat = gv.getAllGroups();
+        //currentGroups = gv.getAllGroups();
 
         // etsitään listview-komponentti layoutista
         lvRyhmaLista = (ListView)findViewById(R.id.lvRyhmaLista);
@@ -173,9 +173,9 @@ public class MainActivity extends AppCompatActivity
         haeRyhmatTask task = new haeRyhmatTask();
         task.execute(new String[]{getString(R.string.polku_hae_ryhmat)});
 
-        // lisätään syötetty ryhmä ryhmat-taulukkoon
+        // lisätään syötetty ryhmä currentGroups-taulukkoon
         // TODO: muuta tämä niin, että se toimii ryhmäolioiden avulla
-        // ryhmat.add(etRyhmaNimi.getText().toString());
+        // currentGroups.add(etRyhmaNimi.getText().toString());
         // arrayAdapter.notifyDataSetChanged();
 
     }
@@ -225,7 +225,7 @@ public class MainActivity extends AppCompatActivity
 
     public void onDebugClick(View v){
         Log.d("oma", "onDebugClick: Add getAllGroups call here for testing");
-        //ArrayList<Group> groupList = new ArrayList<>(gv.getAllGroups());
+        ArrayList<Group> groupList = new ArrayList<>(gv.getAllGroups());
 
     }
 
@@ -329,7 +329,7 @@ public class MainActivity extends AppCompatActivity
         @Override
         protected void onPostExecute(String result) {
             // täällä ryhmien tiedot parsitaan ulos saapuneesta JSON-objektista
-            // ja sijoitetaan ryhmat-listaan
+            // ja sijoitetaan currentGroups-listaan
             Log.d("oma", "saapui ryhmälista: " + result);
 
             //yritetään parsia ryhmät ulos JSON-objektista
@@ -356,7 +356,7 @@ public class MainActivity extends AppCompatActivity
                     r.setGroupPassword(job.getString("salasana"));
                     r.setCreationTime(job.getString("perustamisaika"));
 
-                    // lisätään luotu ryhmäolio aktiviteetin ryhmat-taulukkoon
+                    // lisätään luotu ryhmäolio aktiviteetin currentGroups-taulukkoon
                     ryhmat.add(r);
                 }//for
                 arrayAdapter.notifyDataSetChanged();

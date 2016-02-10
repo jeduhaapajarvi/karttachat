@@ -1,8 +1,6 @@
 package com.tommilaurila.karttachat;
 
-import android.app.Service;
 import android.content.Context;
-import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -12,8 +10,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-import javax.sql.StatementEvent;
 
 /**
  * Created by sakari.saastamoinen on 5.2.2016.
@@ -27,10 +23,10 @@ public class GlobalVariables {
     private static final String GROUPGETALL = "getallgroups";
     private static final String LOCATIONREPORT = "locationreport";
 
-    MainActivity ma = new MainActivity();
+    //MainActivity ma = new MainActivity();
     Context context;
     User currentUser;
-    public ArrayList<Group> ryhmat = new ArrayList<>();
+    public ArrayList<Group> currentGroups = new ArrayList<>();
 
     public GlobalVariables(){
 
@@ -195,22 +191,26 @@ public class GlobalVariables {
     private void addGroup(Group group){
         DatabaseHandler db = new DatabaseHandler(context);
 
+        //Add group to database and currentGroups array
+        //!!!Might cause database inconsistencies!!!
         db.newGroup(group);
+        currentGroups.add(group);
     }
 
     public ArrayList<Group> getAllGroups(){
-        ArrayList<Group> groupList;
 
         DatabaseHandler db = new DatabaseHandler(context);
 
-        groupList = new ArrayList<>(db.getAllGroups());
+        currentGroups = new ArrayList<>(db.getAllGroups());
 
-        if(groupList.size() < 1){
+        if(currentGroups.size() < 1){
             Log.d("oma", "Fetching groups from server.");
             new networkPostTask().execute(GROUPGETALL);
+        }else {
+            Log.d("oma", currentGroups.toString());
         }
 
-        return groupList;
+        return currentGroups;
     }
 
     public List<User> getUsersOfGroup(Group group){
@@ -352,7 +352,7 @@ public class GlobalVariables {
                                 group.setCreationTime(jsonObject.getString("perustamisaika"));
 
                                 addGroup(group);
-                                ryhmat.add(group);
+                                currentGroups.add(group);
 
                                 Log.d("oma", "Added group: " + group.toString());
                             }//for
@@ -361,7 +361,7 @@ public class GlobalVariables {
                             Log.d("oma", "tuli virhe "+ e.toString());
                         }
 
-                        ma.arrayAdapter.notifyDataSetChanged();
+                        //ma.arrayAdapter.notifyDataSetChanged();
 
                         break;
                     case GROUPCREATE:
