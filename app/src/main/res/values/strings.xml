@@ -102,6 +102,8 @@
     <string name="path_leave_group">r0/kayttaja/poistaryhmasta</string>
     <string name="path_user_login">r0/kayttaja/login</string>
     <string name="path_join_group">r0/ryhma/join</string>
+    <string name="login">Login</string>
+    <string name="register">Register</string>
 
 
 </resources>

@@ -25,7 +25,8 @@ import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity
     implements LisaaRyhmaDialogFragment.LisaaRyhmaDialogListener,
-        LisaaKayttajaDialogFragment.LisaaKayttajaDialogListener {
+        LisaaKayttajaDialogFragment.LisaaKayttajaDialogListener,
+        GlobalVariables.GlobalVariablesListener {
 
     // taulukko, joka sisältää ryhmäolioita
     public ArrayList<Group> ryhmat = new ArrayList<>();
@@ -34,7 +35,7 @@ public class MainActivity extends AppCompatActivity
     String kayttaja;
     String ryhmaId;
 
-    //GlobalVariables gv = new GlobalVariables(this);
+    GlobalVariables gv = new GlobalVariables(this);
 
     final String LOPETA_SEURANTA = "com.tommilaurila.tie13karttademo.lopetaseuranta";
 
@@ -51,15 +52,16 @@ public class MainActivity extends AppCompatActivity
         }
 
         // haetaan ryhmät www-palvelimelta asynctaskin avulla
-        haeRyhmatTask task = new haeRyhmatTask();
-        task.execute(new String[]{getString(R.string.polku_hae_ryhmat)});
-        //ryhmat = gv.getAllGroups();
+        //haeRyhmatTask task = new haeRyhmatTask();
+        //task.execute(new String[]{getString(R.string.polku_hae_ryhmat)});
 
         // etsitään listview-komponentti layoutista
         lvRyhmaLista = (ListView)findViewById(R.id.lvRyhmaLista);
 
+        ArrayList<Group> groupList = gv.getAllGroups();
+
         // luodaan sovitin ryhmätaulukon ja listviewin välille
-        arrayAdapter = new RyhmalistaAdapter(this,R.layout.listarivi_ryhmat, ryhmat);
+        arrayAdapter = new RyhmalistaAdapter(this,R.layout.listarivi_ryhmat, groupList);
 
         // liitetään luotu sovitin listviewin kanssa yhteen
         lvRyhmaLista.setAdapter(arrayAdapter);
@@ -170,8 +172,9 @@ public class MainActivity extends AppCompatActivity
 
         // haetaan ryhmät www-palvelimelta asynctaskin avulla
         // nyt uusi ryhmä pitäisi olla mukana
-        haeRyhmatTask task = new haeRyhmatTask();
-        task.execute(new String[]{getString(R.string.polku_hae_ryhmat)});
+        gv.getAllGroups();
+        //haeRyhmatTask task = new haeRyhmatTask();
+        //task.execute(new String[]{getString(R.string.polku_hae_ryhmat)});
 
         // lisätään syötetty ryhmä ryhmat-taulukkoon
         // TODO: muuta tämä niin, että se toimii ryhmäolioiden avulla
@@ -185,48 +188,46 @@ public class MainActivity extends AppCompatActivity
         // User touched the dialog's negative button
     }
 
+    @Override
+    public void onGroupListUpdate(){
+        Log.d("oma", "Grouplistupdate callback!");
+        ryhmat = gv.currentGroups;
+        arrayAdapter.notifyDataSetChanged();
+    }
 
     @Override
-    public void onKayttajaPositiveClick(DialogFragment dialog) {
+    public void onCurrentUserUpdate(){
+        setTitle(getString(R.string.title_activity_main) + " (" + gv.currentUser.getUserName() + ")");
+    }
+
+    @Override
+    public void onMapGroupUpdate(Group group){
+        // FIXME: 12.02.2016 figure out a way (probably instancing) to not need to handle all GVListener callbacks
+    }
+
+    @Override
+    public void onKayttajaRegisterClick(DialogFragment dialog) {
         // otetaan vastaan dialogi (joka lähetti itsensä tänne)
         // ja luetaan dialogin syöttökenttien sisältö
         Dialog dialogView = dialog.getDialog();
         EditText etKayttajaNimi = (EditText)dialogView.findViewById(R.id.kayttajanimi);
         EditText etKayttajaSalasana = (EditText)dialogView.findViewById(R.id.kayttajasalasana);
 
-        // lisätään uusi käyttäjä (Rekisteröinti)
-        Log.d("oma", "Yritit rekisteröityä tunnuksella: " + etKayttajaNimi.getText().toString());
-        Log.d("oma", "Yritit rekisteröityä salasanalla: " + etKayttajaSalasana.getText().toString());
-
-        // lähetetään käyttäjätunnukset palvelimelle asynctaskin avulla
-        new rekisteroidyTask().execute(etKayttajaNimi.getText().toString(),
-                etKayttajaSalasana.getText().toString());
-
-        // TODO: nämä ovat väärässä paikassa, nyt tiedot tallentuvat puhelimeen
-        // ennen tarkistusta!
-
-        // tallennetaan käyttäjätunnus ja salasana puhelimen muistiin
-        // TODO: muuta kovakoodatut avainnimet
-        // TODO: lähetä käyttäjätiedot palvelimelle
-
-        //!!!GlobalVariables has a method for this, needs serverside implementation!!!
-
-        SharedPreferences sharedPref = getSharedPreferences(getString(R.string.pref_nimi), Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putString("kayttajatunnus", etKayttajaNimi.getText().toString());
-        editor.putString("kayttajasalasana", etKayttajaSalasana.getText().toString());
-        editor.apply();
-    }
+        gv.registerUser(etKayttajaNimi.getText().toString(), etKayttajaSalasana.getText().toString());
+   }
 
     @Override
-    public void onKayttajaNegativeClick(DialogFragment dialog) {
-        // User touched the dialog's negative button
+    public void onKayttajaLoginClick(DialogFragment dialog) {
+        //Interface callback for logging in
+        Dialog dialogView = dialog.getDialog();
+        EditText etKayttajaNimi = (EditText)dialogView.findViewById(R.id.kayttajanimi);
+        EditText etKayttajaSalasana = (EditText)dialogView.findViewById(R.id.kayttajasalasana);
+
+        gv.loginUser(etKayttajaNimi.getText().toString(), etKayttajaSalasana.getText().toString());
     }
 
     public void onDebugClick(View v){
-        Log.d("oma", "onDebugClick: Add getAllGroups call here for testing");
-        //ArrayList<Group> groupList = new ArrayList<>(gv.getAllGroups());
-
+        arrayAdapter.notifyDataSetChanged();
     }
 
     //sisäluokka, joka hoitaa yhteydenottoja serverin suuntaan
@@ -314,58 +315,6 @@ public class MainActivity extends AppCompatActivity
             }// else
         }// onPostExec
     }//lisaa ryhma task
-
-
-    //sisäluokka, joka hakee serveriltä kaikki ryhmät
-    // AsyncTask<params, progress, result>
-    private class haeRyhmatTask extends AsyncTask<String, Void, String> {
-
-        @Override
-        protected String doInBackground(String... urls) {
-            ApuHttp getHakija = new ApuHttp();
-            return getHakija.getSivu(urls[0]);
-        }// DoInBackground
-
-        @Override
-        protected void onPostExecute(String result) {
-            // täällä ryhmien tiedot parsitaan ulos saapuneesta JSON-objektista
-            // ja sijoitetaan ryhmat-listaan
-            Log.d("oma", "saapui ryhmälista: " + result);
-
-            //yritetään parsia ryhmät ulos JSON-objektista
-            // serveriltä saapuu JSON-array [ {...} ]
-            try {
-                JSONArray ryhmalista = new JSONArray(result);
-                Log.d("oma", "JSONArrayn pituus on " + ryhmalista.length());
-
-                // tyhjennä ensin vanha ryhmälista
-                ryhmat.clear();
-
-                // käydään JSONtaulukko läpi ja luodaan ryhma-olio, jokaisesta
-                // JSON-objektista
-                for(int i=0; i<ryhmalista.length(); i++) {
-                    Group r = new Group();
-
-                    // haetaan JSONarraysta i:nnes objekti
-                    JSONObject job = ryhmalista.getJSONObject(i);
-
-                    // täytetään ryhmäolion kentät JSONobjektista
-                    r.setGroup_id(job.getInt("ryhma_id"));
-                    r.setCreator(job.getInt("luoja"));
-                    r.setGroupName(job.getString("nimi"));
-                    r.setGroupPassword(job.getString("salasana"));
-                    r.setCreationTime(job.getString("perustamisaika"));
-
-                    // lisätään luotu ryhmäolio aktiviteetin ryhmat-taulukkoon
-                    ryhmat.add(r);
-                }//for
-                arrayAdapter.notifyDataSetChanged();
-            }//try
-            catch (Exception e) {
-                Log.d("oma", "tuli virhe "+ e.toString());
-            }
-        }// onPostExec
-    }//haeRyhmat.task
 
 
 }// ****************  mainactivity   ***************************

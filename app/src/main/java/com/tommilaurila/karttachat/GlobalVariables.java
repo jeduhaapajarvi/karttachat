@@ -1,8 +1,6 @@
 package com.tommilaurila.karttachat;
 
-import android.app.Service;
 import android.content.Context;
-import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -13,12 +11,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import javax.sql.StatementEvent;
-
 /**
  * Created by sakari.saastamoinen on 5.2.2016.
  */
 public class GlobalVariables {
+
+    public interface GlobalVariablesListener {
+        public void onGroupListUpdate();
+        public void onCurrentUserUpdate();
+        public void onMapGroupUpdate(Group group);
+    }
+
+    GlobalVariablesListener localListener;
 
     private static final String USERLOGIN = "userlogin";
     private static final String USERREGISTER = "userregister";
@@ -27,17 +31,16 @@ public class GlobalVariables {
     private static final String GROUPGETALL = "getallgroups";
     private static final String LOCATIONREPORT = "locationreport";
 
-    MainActivity ma = new MainActivity();
     Context context;
     User currentUser;
-    public ArrayList<Group> ryhmat = new ArrayList<>();
+    public ArrayList<Group> currentGroups = new ArrayList<>();
 
     public GlobalVariables(){
-
     }
 
     public GlobalVariables(Context contex){
         this.context = contex;
+        localListener = (GlobalVariablesListener) contex;
     }
 
     //TODO Add a method that checks from server if there is new information
@@ -48,26 +51,39 @@ public class GlobalVariables {
 
     /*---USER---*/
 
-    public void checkUser(String userName, String pWord){
+    public void loginUser(String userName, String pWord){
 
         Log.d("oma", "Login as: " + userName + " " + pWord);
 
-        boolean loginValid;
-
-        int userId = -1/*plug HttpHelper login here*/;
-        //TODO Add HtmlHelper-class that has a loginUser method that checks
-        //TODO from the server if a user with a particular password is a valid user
-        //TODO return as userId, if not valid, return -1
-
-        DatabaseHandler db = new DatabaseHandler(context);
-
-        List<User> userList = db.getAllUsers();
-
-        for(int i = 0; i < userList.size(); i++){
-            if(userName.equals(userList.get(i).getUserName())){
-                userId = userList.get(i).getUser_id();
-            }
+        if(currentUser == null) {
+            new networkPostTask(new NetworkTaskListener() {
+                @Override
+                public void onTaskComplete(boolean taskSuccess) {
+                    if (taskSuccess){
+                        localListener.onCurrentUserUpdate();
+                    }
+                }
+            }).execute(USERLOGIN,
+                    userName,
+                    pWord);
         }
+    }
+
+    public void registerUser(String userName, String pWord){
+
+        Log.d("oma", "Registering as: " + userName + " " + pWord);
+
+        new networkPostTask(new NetworkTaskListener() {
+            @Override
+            public void onTaskComplete(boolean taskSuccess) {
+                if (taskSuccess){
+                    localListener.onCurrentUserUpdate();
+                }
+            }
+        }).execute(USERREGISTER,
+                userName,
+                pWord);
+
     }
 
     public int addNewUser(User user){
@@ -186,7 +202,12 @@ public class GlobalVariables {
     /*---GROUPS---*/
 
     public void newGroup(Group group){
-        new networkPostTask().execute(GROUPCREATE,
+        new networkPostTask(new NetworkTaskListener() {
+            @Override
+            public void onTaskComplete(boolean taskSuccess) {
+
+            }
+        }).execute(GROUPCREATE,
                 group.getCreator() + "",
                 group.getGroupName(),
                 group.getGroupPassword());
@@ -199,18 +220,27 @@ public class GlobalVariables {
     }
 
     public ArrayList<Group> getAllGroups(){
-        ArrayList<Group> groupList;
 
-        DatabaseHandler db = new DatabaseHandler(context);
+        final DatabaseHandler db = new DatabaseHandler(context);
 
-        groupList = new ArrayList<>(db.getAllGroups());
+        currentGroups = new ArrayList<>(db.getAllGroups());
 
-        if(groupList.size() < 1){
-            Log.d("oma", "Fetching groups from server.");
-            new networkPostTask().execute(GROUPGETALL);
+        if(currentGroups.size() < 1){
+            Log.d("oma", "Fetching currentGroups from server.");
+            new networkPostTask(new NetworkTaskListener() {
+                @Override
+                public void onTaskComplete(boolean taskSuccess) {
+                    if (taskSuccess) {
+                        currentGroups = new ArrayList<>(db.getAllGroups());
+                    }
+                }
+            }).execute(GROUPGETALL);
+            localListener.onGroupListUpdate();
+            return currentGroups;
+        }else {
+            localListener.onGroupListUpdate();
+            return currentGroups;
         }
-
-        return groupList;
     }
 
     public List<User> getUsersOfGroup(Group group){
@@ -223,6 +253,12 @@ public class GlobalVariables {
 
     /*---NETWORK---*/
     private class networkPostTask extends AsyncTask<String, Void, String[] >{
+
+        private NetworkTaskListener local;
+
+        public networkPostTask(NetworkTaskListener listener){
+            local=listener;
+        }
 
         @Override
         protected String[] doInBackground(String...  params){
@@ -306,21 +342,34 @@ public class GlobalVariables {
 
         @Override
         protected void onPostExecute(String[] result){
+
+            //initialize error boolean to pass through to calling method
+            boolean taskSuccess = false;
+
             if(result != null && result[1].length() > 0){
                 switch (result[0]){
                     case USERREGISTER: case USERLOGIN:
                         try {
-                            JSONObject jsonObject = new JSONObject(result[1]);
+                            JSONArray jsonArray = new JSONArray(result[1]);
+
+                            //Debugging
+                            //Log.d("oma", "UserObject: " + result[1]);
+
+                            JSONObject jsonObject = jsonArray.getJSONObject(0);
 
                             User user = new User();
 
                             user.setUser_id(jsonObject.getInt("kayttaja_id"));
                             user.setUserName(jsonObject.getString("nimimerkki"));
-                            user.setLevel(jsonObject.getInt("taso"));
                             user.setCreationTime(jsonObject.getString("perustamisaika"));
                             user.setLastSeen(jsonObject.getString("viimeksi_nahty"));
-                            user.setGroup_id(jsonObject.getInt("usergroupid"));
-                            user.setServerTime(jsonObject.getString("userservertime"));
+                            user.setGroup_id(0);
+
+                            //TODO Servertime needs implementation on the server side
+                            //How is this different from last seen?
+                            //user.setServerTime(jsonObject.getString("userservertime"));
+
+                            Log.d("oma", "Logged in as: " + user.getUserName());
 
                             if(result[0].equals(USERLOGIN)){
                                 updateUser(user);
@@ -329,6 +378,7 @@ public class GlobalVariables {
                             }
 
                             currentUser = user;
+                            taskSuccess = true;
 
                         } catch (Exception e){
                             Log.d("oma", "onPostExecute USERREGISTER error: " + e);
@@ -352,16 +402,17 @@ public class GlobalVariables {
                                 group.setCreationTime(jsonObject.getString("perustamisaika"));
 
                                 addGroup(group);
-                                ryhmat.add(group);
+                                currentGroups.add(group);
+                                taskSuccess = true;
 
                                 Log.d("oma", "Added group: " + group.toString());
                             }//for
+
+
                         }//try
                         catch (Exception e) {
                             Log.d("oma", "tuli virhe "+ e.toString());
                         }
-
-                        ma.arrayAdapter.notifyDataSetChanged();
 
                         break;
                     case GROUPCREATE:
@@ -378,6 +429,7 @@ public class GlobalVariables {
 
                             db.newGroup(group);
                             currentUser.setGroup_id(group.getGroup_id());
+                            taskSuccess = true;
 
                         } catch (Exception e){
                             Log.d("oma", "onPostExecute GROUPCREATE error: " + e);
@@ -407,14 +459,19 @@ public class GlobalVariables {
                                 user.setLastSeen(jsonObject.getString("viimeksi_nahty"));
                                 user.setGroup_id(jsonObject.getInt("ryhma_id"));
                                 user.setServerTime(jsonObject.getString("serveriaika"));
+                                taskSuccess = true;
                             }
                         } catch (Exception e){
                             Log.d("oma", "onPostExecute LOCATIONREPORT error: " + e);
                         }
                         break;
-                }
-            }
-        }
-    }
+                }//switch for different connection descriptions
+            }//if for checking if result length is 0 or it is null
+
+            //Pass taskSuccess boolean to calling method in case some exception gets thrown
+            local.onTaskComplete(taskSuccess);
+
+        }//onPostExecute
+    }//networkPostTask
     /*---/NETWORK---*/
 }

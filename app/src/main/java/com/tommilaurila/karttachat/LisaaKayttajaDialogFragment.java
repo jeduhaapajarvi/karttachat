@@ -14,8 +14,8 @@ import android.view.LayoutInflater;
 public class LisaaKayttajaDialogFragment extends DialogFragment {
 
     public interface LisaaKayttajaDialogListener {
-        public void onKayttajaPositiveClick(DialogFragment dialog);
-        public void onKayttajaNegativeClick(DialogFragment dialog);
+        public void onKayttajaRegisterClick(DialogFragment dialog);
+        public void onKayttajaLoginClick(DialogFragment dialog);
     }
 
     // Use this instance of the interface to deliver action events
@@ -48,17 +48,17 @@ public class LisaaKayttajaDialogFragment extends DialogFragment {
         // Pass null as the parent view because its going in the dialog layout
         builder.setView(inflater.inflate(R.layout.dialog_lisaa_kayttaja, null))
                 // Add action buttons
-                .setPositiveButton(R.string.lisaa, new DialogInterface.OnClickListener() {
+                .setPositiveButton(R.string.register, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
                         // Send the positive button event back to the host activity
-                        mListener.onKayttajaPositiveClick(LisaaKayttajaDialogFragment.this);
+                        mListener.onKayttajaRegisterClick(LisaaKayttajaDialogFragment.this);
                     }
                 })
-                .setNegativeButton(R.string.peruuta, new DialogInterface.OnClickListener() {
+                .setNegativeButton(R.string.login, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         // Send the negative button event back to the host activity
-                        mListener.onKayttajaNegativeClick(LisaaKayttajaDialogFragment.this);
+                        mListener.onKayttajaLoginClick(LisaaKayttajaDialogFragment.this);
                         LisaaKayttajaDialogFragment.this.getDialog().cancel();
                     }
                 });

@@ -45,7 +45,8 @@ public class MapsActivity extends android.support.v7.app.AppCompatActivity
     implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
         LocationListener,
-        PaivitysvaliDialogFragment.PaivitysvaliDialogListener
+        PaivitysvaliDialogFragment.PaivitysvaliDialogListener,
+        GlobalVariables.GlobalVariablesListener
 {
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
@@ -67,6 +68,23 @@ public class MapsActivity extends android.support.v7.app.AppCompatActivity
     final String LOPETA_SEURANTA = "com.tommilaurila.tie13karttademo.lopetaseuranta";
     final String NOTIF_CLICK = "com.tommilaurila.tie13karttademo.notifclick";
 
+    GlobalVariables gv = new GlobalVariables(this);
+
+    /*GlobalVariablesListener callbacks*/
+    @Override
+    public void onMapGroupUpdate(Group group){
+
+    }
+
+    @Override
+     public void onGroupListUpdate(){
+
+    }
+
+    @Override
+    public void onCurrentUserUpdate(){
+
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
