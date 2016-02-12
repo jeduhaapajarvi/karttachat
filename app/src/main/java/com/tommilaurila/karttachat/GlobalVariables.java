@@ -216,16 +216,19 @@ public class GlobalVariables {
     private void addGroup(Group group){
         DatabaseHandler db = new DatabaseHandler(context);
 
+        //Add group to database and currentGroups array
+        //!!!Might cause database inconsistencies!!!
         db.newGroup(group);
+        currentGroups.add(group);
     }
 
-    public ArrayList<Group> getAllGroups(){
+    public ArrayList<Group> getAllGroups() {
 
         final DatabaseHandler db = new DatabaseHandler(context);
 
         currentGroups = new ArrayList<>(db.getAllGroups());
 
-        if(currentGroups.size() < 1){
+        if (currentGroups.size() < 1) {
             Log.d("oma", "Fetching currentGroups from server.");
             new networkPostTask(new NetworkTaskListener() {
                 @Override
@@ -237,11 +240,12 @@ public class GlobalVariables {
             }).execute(GROUPGETALL);
             localListener.onGroupListUpdate();
             return currentGroups;
-        }else {
+        } else {
             localListener.onGroupListUpdate();
             return currentGroups;
         }
     }
+
 
     public List<User> getUsersOfGroup(Group group){
         DatabaseHandler db = new DatabaseHandler(context);
@@ -413,7 +417,6 @@ public class GlobalVariables {
                         catch (Exception e) {
                             Log.d("oma", "tuli virhe "+ e.toString());
                         }
-
                         break;
                     case GROUPCREATE:
                         try {
